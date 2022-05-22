@@ -23,15 +23,22 @@ export class PercentageStackedBarComponent implements OnInit {
   color: string[];
 
   frizia_json = './assets/data/frizia.json';
+  frizia_1 = './assets/data/frizia_1.json';
+  frizia_2 = './assets/data/frizia_2.json';
+  frizia_3 = './assets/data/frizia_3.json';
+  frizia_4 = './assets/data/frizia_4.json';
+  frizia_5 = './assets/data/frizia_5.json';
+  frizia_6 = './assets/data/frizia_6.json';
+  frizia_7 = './assets/data/frizia_7.json';
   hanyeseul_20687_json = './assets/data/hanyeseul_20687.json';
   dentist_0522_json = './assets/data/dentist_0522.json'
 
   constructor() {
     this.layout = {
-      marginTop: 20, marginRight: 20, marginBottom: 30, marginLeft: 40,
+      marginTop: 20, marginRight: 20, marginBottom: 50, marginLeft: 40,
       height: 500, width: 960
     }
-    this.x_axis_tick_num = 15;
+    this.x_axis_tick_num = 30;
     this.bound_frd = 0.6;
     this.bound_hst = 0.4;
     // this.color = ["#89BAF5", "#F3EBD3", "#F04148"]
@@ -39,7 +46,7 @@ export class PercentageStackedBarComponent implements OnInit {
   }
 
   ngAfterViewInit(): void {
-    d3.json(this.dentist_0522_json).then((d: any) => {
+    d3.json(this.frizia_1).then((d: any) => {
       d.index = +d.index;
       d.datatype = +d.datatype;
       d.toWho = d.toWho;
@@ -125,8 +132,16 @@ export class PercentageStackedBarComponent implements OnInit {
   }
   get_data_percentage(data: IBindedData[]) {
     for (let datas of data) {
-      const friendly = datas.friendly_stance / datas.total;
-      const hostile = datas.hostile_stance / datas.total;
+      let friendly;
+      let hostile;
+      if(datas.total == 0){
+        friendly = 0;
+        hostile = 0;
+      }
+      else{
+        friendly = datas.friendly_stance / datas.total;
+        hostile = datas.hostile_stance / datas.total;
+      }
       let temp_data: IPercentageData = { time: datas.time, friendly_prctg: friendly, hostile_prctg: hostile };
       this.percentage_data.push(temp_data)
     }
@@ -169,7 +184,12 @@ export class PercentageStackedBarComponent implements OnInit {
         // +":"+date.getMinutes()
         // +":"+date.getSeconds()
       }))
-      .attr('transform', 'translate(0,' + height + ")");
+      .attr('transform', 'translate(0,' + height + ")")
+      .selectAll('text')
+      .style("text-anchor", "end")
+      .attr("dx", "-.8em")
+      .attr("dy", ".15em")
+      .attr('transform', 'rotate(-45)');
 
     graph.append('g')
       .attr('class', 'axis axis--y')
