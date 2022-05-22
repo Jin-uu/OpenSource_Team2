@@ -3,7 +3,7 @@ from googleapiclient.discovery import build
 import json
 from transformers import ElectraForSequenceClassification, ElectraTokenizerFast
 
-### 개인정보로 하단의 key git 상 
+### 개인정보로 하단의 key git 상 삭제
 api_key = ''
 video_id = ''
 
