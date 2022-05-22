@@ -10,7 +10,8 @@ import { IBindedData, ICommentDataInfo, ILayoutInfo } from 'src/app/shared/model
 export class CommentStackedBarComponent implements OnInit {
 	@ViewChild('rootSvg') svgRoot !: ElementRef;
   layout : ILayoutInfo;
-	binded_data !: IBindedData[];
+  preprocessed_data!:ICommentDataInfo[];
+	binded_data : IBindedData[] = [];
 	x_axis_tick_num: number;
 	x_axis_tick_size!: number;
 	timeStampMin !: number;
@@ -21,6 +22,7 @@ export class CommentStackedBarComponent implements OnInit {
   color : string[];
   frizia_json = './assets/data/frizia.json';
   hanyeseul_20687_json = './assets/data/hanyeseul_20687.json';
+  dentist_0522_json ='./assets/data/dentist_0522.json'
 
 
   constructor() {
@@ -29,24 +31,28 @@ export class CommentStackedBarComponent implements OnInit {
 			height: 500, width: 960
 		}
 		this.x_axis_tick_num = 15;
-    this.bound_frd = 0.1;
-    this.bound_hst = -0.1;
-    this.color=["#89BAF5", "#F3EBD3", "#F04148"]
+    this.bound_frd = 0.6;
+    this.bound_hst = 0.4;
+    this.color=["#89BAF5", "#F04148"]
 	}
 
   ngAfterViewInit(): void {
-		d3.json(this.frizia_json).then((d: any) => {
+		d3.json(this.dentist_0522_json).then((d: any) => {
+      d.index = +d.index;
 			d.datatype = +d.datatype;
 			d.toWho = d.toWho;
 			d.author = d.author;
-			d.published_date = d.published_date;
-			d.time_num = +d.time_num;
+			d.publishedDate = d.publishedDate;
+			d.timeNum = d.timeNum;
 			d.text = d.text;
       d.score = + d.score;
 			return d;
 		}).then((data: ICommentDataInfo[]) => {
-			console.log("data[1]: ",data[1]);
-			this.prepare_data(data);
+			console.log("data: ",data);
+      this.preprocess(data);
+			console.log("preprocessed_data: ",this.preprocessed_data);
+			this.bind_data(this.preprocessed_data);
+			console.log("binded_data: ",this.binded_data);
 			this.render(this.binded_data);
 		})
 	}
@@ -54,35 +60,45 @@ export class CommentStackedBarComponent implements OnInit {
   ngOnInit(): void {
   }
 
-  prepare_data(data: ICommentDataInfo[]){
-    console.log("data[1]: ",data[1]);
-    console.log("data: ",data);
-    console.log("data Obj: ",Object.values(data));
-    const array_data = Object.values(data);
+  preprocess(data: ICommentDataInfo[]){
+    this.preprocessed_data = data;
+  }
 
+  bind_data(data: ICommentDataInfo[]){
+    console.log("parse:",Date.parse(data[1].publishedDate));
 
-		this.timeStampMin = d3.min(array_data, (d: ICommentDataInfo) => d.time_num) as number;
-		this.timeStampMax = d3.max(array_data, (d: ICommentDataInfo) => d.time_num) as number;
-		this.x_axis_tick_size = (this.timeStampMax - this.timeStampMin) / this.x_axis_tick_num;
-    console.log(this.timeStampMin);
-    console.log(this.timeStampMax);
-    console.log(this.x_axis_tick_size);
+		this.timeStampMin = d3.min(data, (d: ICommentDataInfo) => Date.parse(d.publishedDate))!;
+    console.log("timeStampMin: ",this.timeStampMin);
+
+		this.timeStampMax = d3.max(data, (d: ICommentDataInfo) => Date.parse(d.publishedDate))!;
+    console.log("timeStampMax: ",this.timeStampMax);
+
+		this.x_axis_tick_size = Math.round((this.timeStampMax - this.timeStampMin) / this.x_axis_tick_num);
+    console.log("x_axis_tick_size: ",this.x_axis_tick_size);
 
 
 		for (let i = 0; i < this.x_axis_tick_num; i++) {
 			this.xDomain[i] = (this.timeStampMin + this.x_axis_tick_size*i).toString();
 		}
+    console.log("xDomain:",this.xDomain);
+
+
     for(let times of this.xDomain){
-      let temp_data:IBindedData={time:times,total:0,friendly_stance:0,middle_stance:0,hostile_stance:0};
+      let temp_data:IBindedData={
+        time:times,
+        total:0,
+        friendly_stance:0,
+        hostile_stance:0
+      };
       this.binded_data.push(temp_data)
     }
 
-    let comments:ICommentDataInfo
+    let comments:ICommentDataInfo;
     for(comments of data){
       let idx=0;
       for(let i=0; i<this.x_axis_tick_num; i++){
         let left=Number(this.xDomain[i]);
-        let middle = comments.time_num;
+        let middle = Date.parse(comments.publishedDate);
         if(i==this.x_axis_tick_num-1){
           idx=i;
           // console.log("True:"+i,left, middle, "NAN");
@@ -96,6 +112,7 @@ export class CommentStackedBarComponent implements OnInit {
           break;
         }
       }
+
       if(comments.score > this.bound_frd){
         this.binded_data[idx].friendly_stance++;
         this.binded_data[idx].total++;
@@ -104,16 +121,67 @@ export class CommentStackedBarComponent implements OnInit {
         this.binded_data[idx].hostile_stance++;
         this.binded_data[idx].total++;
       }
-      else{
-        this.binded_data[idx].middle_stance++;
-        this.binded_data[idx].total++;
-      }
     }
-    console.log("binded_data:",this.binded_data);
   }
 
   render(data: IBindedData[]){
+		const svg = d3.select(this.svgRoot.nativeElement)
+			.attr('width', this.layout.width)
+			.attr('height', this.layout.height);
 
+		const width = +svg.attr('width') - this.layout.marginLeft - this.layout.marginRight;
+		const height = +svg.attr('height') - this.layout.marginTop - this.layout.marginBottom;
+
+    const keys = Object.getOwnPropertyNames(data[0]);
+    keys.splice(0, 2);
+    console.log("keys:"+keys);
+    // keys : friendly_stance,middle_stance,hostile_stance
+
+		const x = d3.scaleBand<string>().rangeRound([0, width]).padding(0.1);
+		const y = d3.scaleLinear<number>().rangeRound([height, 0]);
+    const z = d3.scaleOrdinal<string>().domain(keys).range(this.color);
+
+    const total_max = d3.max(data, (d:IBindedData) => d.total) as number;
+    console.log(total_max);
+		x.domain(data.map((d:IBindedData) => d.time));
+		y.domain([0, total_max]);
+
+    const stackedData = d3.stack<IBindedData>().keys(keys)(data);
+
+
+		const graph = svg.append('g')
+			.attr('transform', 'translate(' + this.layout.marginLeft + ',' + this.layout.marginTop + ")");
+
+		graph.append('g')
+			.attr('class', 'axis axis--x')
+			.call(d3.axisBottom(x).tickFormat((d,i) => {
+        var date = new Date(Number(d)*1);
+        return ""+date.getFullYear()
+        +"/"+(date.getMonth()+1)
+        +"/"+date.getDate()
+        // +" "+date.getHours()
+        // +":"+date.getMinutes()
+        // +":"+date.getSeconds()
+      }))
+			.attr('transform', 'translate(0,' + height + ")");
+
+		graph.append('g')
+			.attr('class', 'axis axis--y')
+			.call(d3.axisLeft(y));
+
+    graph.append('g')
+          .selectAll('g')
+          .data(stackedData)
+          .enter().append('g')
+          .attr('class','bar')
+          .attr('fill', d=>z(d.key))
+          .selectAll('rect')
+          .data(d=>d)
+          .enter().append('rect')
+          .attr('x', d => (x(d.data.time))!)
+          .attr('y', (d:any) => y(d[1]))
+          .attr('width', x.bandwidth())
+          .attr('height', (d:any) => y(d[0]) - y(d[1]))
   }
 
 }
