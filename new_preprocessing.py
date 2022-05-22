@@ -3,29 +3,30 @@ from googleapiclient.discovery import build
 import json
 from transformers import ElectraForSequenceClassification, ElectraTokenizerFast
 
-api_key = 'AIzaSyC4z-yJBlW3uNziSyQxZ7hydDm6GhxMD7U'
-video_id = 'fU6lxdxTdU4'
+### 개인정보로 하단의 key git 상 
+api_key = ''
+video_id = ''
 
 api_obj = build('youtube', 'v3', developerKey=api_key)
 response = api_obj.commentThreads().list(part="id, replies, snippet", videoId=video_id, maxResults=100).execute()
 
 cur_index = 0
-result = {}
+result = []
 
 while response:
     for item in response['items']:
         comment = item['snippet']['topLevelComment']['snippet']
         ### datatype "0" 원댓글
         result_format = {
+            "index": cur_index,
             "datatype": "0",
             "toWho": "",
-            #"cid": comment['authorChannelId']['value'],
             "author": comment['authorDisplayName'],
-            "published_date": comment['publishedAt'],
-            "time_num": re.sub(r'[^0-9]', '', comment['publishedAt']),
+            "publishedDate": comment['publishedAt'],
+            "timeNum": re.sub(r'[^0-9]', '', comment['publishedAt']),
             "text": comment['textDisplay']
         }
-        result[cur_index] = result_format
+        result.append(result_format)
         cur_index = cur_index + 1
 
         if 'replies' in item.keys():
@@ -65,30 +66,30 @@ while response:
                             reference_toWho = cur_index + close_reference[close_index]
 
                     result_format = {
+                        "index": cur_index,
                         "datatype": "2",
                         "toWho": reference_toWho,
-                        #"cid": reply['snippet']['authorChannelId']['value'],
                         "author": reply['snippet']['authorDisplayName'],
-                        "published_date": reply['snippet']['publishedAt'],
-                        "time_num": re.sub(r'[^0-9]', '', reply['snippet']['publishedAt']),
+                        "publishedDate": reply['snippet']['publishedAt'],
+                        "timeNum": re.sub(r'[^0-9]', '', reply['snippet']['publishedAt']),
                         "text": reply['snippet']['textDisplay']
                     }
-                    result[cur_index] = result_format
+                    result.append(result_format)
                     cur_index = cur_index + 1
                     reply_num = reply_num + 1
 
                 ### datatype "1" 대댓글
                 else:
                     result_format = {
+                        "index": cur_index,
                         "datatype": "1",
                         "toWho": cur_index - reply_num - 1,
-                        #"cid": reply['snippet']['authorChannelId']['value'],
                         "author": reply['snippet']['authorDisplayName'],
-                        "published_date": reply['snippet']['publishedAt'],
-                        "time_num": re.sub(r'[^0-9]', '', reply['snippet']['publishedAt']),
+                        "publishedDate": reply['snippet']['publishedAt'],
+                        "timeNum": re.sub(r'[^0-9]', '', reply['snippet']['publishedAt']),
                         "text": reply['snippet']['textDisplay']
                     }
-                    result[cur_index] = result_format
+                    result.append(result_format)
                     cur_index = cur_index + 1
                     reply_num = reply_num + 1
 
@@ -117,12 +118,13 @@ for i in range(0, len(result)):
             del_set.add(i)
 
 for i in del_set:
-    result.pop(i)
+    for j in range(0, len(result)-1):
+        if result[j]['index'] == i:
+            result.pop(j)
 
 
 ### 시간순 정렬
-result = sorted(result.items(), key=lambda x: x[1]['time_num'], reverse=True)
-result = dict(result)
+result = sorted(result, key=lambda x: x['timeNum'], reverse=False)
 
 
 ######################## 감성분석 ##########################
@@ -145,11 +147,11 @@ tokenizer = ElectraTokenizerFast.from_pretrained(args['model_path'])
 ### 한 줄씩 감성 분석
 for i in result:
     try:
-        input_vector = tokenizer.encode(result[i]['text'], return_tensors='pt')
+        input_vector = tokenizer.encode(i['text'], return_tensors='pt')
         pred = model(input_ids=input_vector, labels=None).logits.argmax(dim=-1).tolist()
     except:
         continue
-    result[i]['score'] = pred[0]
+    i['score'] = pred[0]
 
-with open('dentist.json', 'w', encoding='utf-8') as make_file:
+with open('frizia.json', 'w', encoding='utf-8') as make_file:
     json.dump(result, make_file, ensure_ascii=False, indent='\t')
