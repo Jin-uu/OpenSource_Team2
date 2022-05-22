@@ -14,14 +14,27 @@ export interface ILayoutInfo {
 }
 
 export interface ICommentDataInfo {
-	cid: string;          // 댓글 고유 id
-	text: string;         // 댓글 내용
-	author: string;       // 댓글 작성자 이름
-	time_parsed: number;  // 댓글 작성 시간
-	datatype: number;     // 댓글 종류 1:원댓글 , 2:대댓글, 3:@언급댓글
-	toWho: string;        //  1:공백, 2:원댓글cid, 3:언급댓글 author
-  score: number;        // 우호도 산출 결과
+  datatype : number;                      // 댓글 종류 0:원댓글 , 1:대댓글, 2:@언급댓글
+	toWho: string;                          // 0:공백, 1,2: 대상 댓글 index
+	author: string;                         // 댓글 작성자 이름
+  published_date : string;                // 댓글 작성 시간
+	time_num: number;                       // 댓글 고유 id
+	text: string;                           // 댓글 내용
+  score: number;                          // 우호도 산출 결과 0 or 1
 }
+
+
+
+// "0": {
+//   "datatype": "0",
+//   "toWho": "",
+//   "author": "엠프리",
+//   "published_date": "2022-05-16T01:34:28Z",
+//   "time_num": "20220516013428",
+//   "text": "솔직한 예슬씨 응원 합니다",
+//   "score": 1
+// },
+
 /*
   {
 		"cid": "Ugx7PTBjVuorsFye9XJ4AaABAg",
@@ -33,6 +46,13 @@ export interface ICommentDataInfo {
 		"score": 0.6000000238418579
 	}
 */
+export interface IBindedData {
+  time: string;
+  total: number;
+  friendly_stance: number;
+  hostile_stance: number;
+  middle_stance: number;
+}
 
 export interface ICommentApiDataInfo {
   datatype : number;        // 0:원댓글, 1:대댓글, 2:언급댓글
@@ -54,3 +74,4 @@ export interface ICommentApiDataInfo {
 //   "time_num": "20220318090035",
 //   "text": "아니 콧구멍 시강!!"
 // },
+
