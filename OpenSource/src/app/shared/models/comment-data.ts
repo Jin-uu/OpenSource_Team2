@@ -16,10 +16,10 @@ export interface ILayoutInfo {
 export interface ICommentDataInfo {
   index : number;                         // 인덱스
   datatype : number;                      // 댓글 종류 0:원댓글 , 1:대댓글, 2:@언급댓글
-	toWho: string;                          // 0:공백, 1,2: 대상 댓글 index
+	toWho: number ;                         // 0:공백, 1,2: 대상 댓글 index
 	author: string;                         // 댓글 작성자 이름
-  publishedDate : string;                // 댓글 작성 시간
-	timeNum: string;                       // 댓글 고유 id
+  publishedDate : string;                 // 댓글 작성 시간
+	timeNum: string;                        // 댓글 고유 id
 	text: string;                           // 댓글 내용
   score: number;                          // 우호도 산출 결과 0 or 1
 }

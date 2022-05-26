@@ -10,6 +10,7 @@ import { IBindedData, ICommentDataInfo, ILayoutInfo, IPercentageData } from 'src
 export class PercentageStackedBarComponent implements OnInit {
   @ViewChild('rootSvg') svgRoot !: ElementRef;
   layout: ILayoutInfo;
+  original_data !: ICommentDataInfo[];
   preprocessed_data!: ICommentDataInfo[];
   binded_data: IBindedData[] = [];
   percentage_data: IPercentageData[] = [];
@@ -46,10 +47,10 @@ export class PercentageStackedBarComponent implements OnInit {
   }
 
   ngAfterViewInit(): void {
-    d3.json(this.frizia_1).then((d: any) => {
+    d3.json(this.frizia_7).then((d: any) => {
       d.index = +d.index;
       d.datatype = +d.datatype;
-      d.toWho = d.toWho;
+      d.toWho = +d.toWho;
       d.author = d.author;
       d.publishedDate = d.publishedDate;
       d.timeNum = d.timeNum;
@@ -70,7 +71,40 @@ export class PercentageStackedBarComponent implements OnInit {
   ngOnInit(): void {
   }
   preprocess(data: ICommentDataInfo[]) {
-    this.preprocessed_data = data;
+    this.preprocessed_data = data.map(d =>({
+      index : +d.index,
+      datatype : +d.datatype,
+      toWho : +d.toWho,
+      author : d.author,
+      publishedDate : d.publishedDate,
+      timeNum : d.timeNum,
+      text : d.text,
+      score : + d.score
+    }))
+    console.log("pre data :",this.preprocessed_data);
+
+
+    this.preprocessed_data.forEach(d => {
+
+      if(d.datatype == 1){
+        console.log(d.index, d.toWho,typeof(d.index), typeof(d.toWho));
+
+        console.log("find:",this.preprocessed_data.find(d => d.index == d.toWho));
+
+        console.log("find_index:",this.preprocessed_data.findIndex(d => d.index == d.toWho));
+
+        if(data.find(d => d.index == d.toWho)?.score == 0){
+          d.score *= -1;
+        }
+      }
+    })
+    // this.preprocessed_data = data.map(d =>{({
+    //   index : d.index,
+    //   datatype : d.datatype,
+    //   toWho : d.toWho,
+    //   author : d.author,
+    //   publishedDate : d.publishedDate
+    // })});
   }
 
   bind_data(data: ICommentDataInfo[]) {
