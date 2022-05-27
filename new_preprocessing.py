@@ -3,8 +3,8 @@ from googleapiclient.discovery import build
 import json
 from transformers import ElectraForSequenceClassification, ElectraTokenizerFast
 
-api_key = 'AIzaSyC4z-yJBlW3uNziSyQxZ7hydDm6GhxMD7U'
-video_id = 'fU6lxdxTdU4'
+api_key = ''
+video_id = ''
 
 api_obj = build('youtube', 'v3', developerKey=api_key)
 response = api_obj.commentThreads().list(part="id, replies, snippet", videoId=video_id, maxResults=100).execute()
