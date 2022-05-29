@@ -10,6 +10,7 @@ import { DotChartComponent } from './components/charts/dot-chart/dot-chart.compo
 import { WorkspaceComponent } from './components/workspace/workspace.component';
 import { PercentageStackedBarComponent } from './components/charts/chart_01/percentage-stacked-bar/percentage-stacked-bar.component';
 import { CommentStackedBarComponent } from './components/charts/chart_01/comment-stacked-bar/comment-stacked-bar.component';
+import { PercentageLineComponent } from './components/charts/chart_01/percentage-line/percentage-line.component';
 
 @NgModule({
   declarations: [
@@ -17,7 +18,8 @@ import { CommentStackedBarComponent } from './components/charts/chart_01/comment
     DotChartComponent,
     WorkspaceComponent,
     PercentageStackedBarComponent,
-    CommentStackedBarComponent
+    CommentStackedBarComponent,
+    PercentageLineComponent
   ],
   imports: [
     BrowserAnimationsModule,

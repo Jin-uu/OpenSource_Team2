@@ -68,3 +68,8 @@ export interface IPercentageData{
   friendly_prctg: number;
   hostile_prctg: number;
 }
+
+export interface ILineChartData{
+  time : string;
+  value : number;
+}
