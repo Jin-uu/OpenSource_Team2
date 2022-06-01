@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import * as d3 from 'd3';
 import { IBindedData, ICommentDataInfo, ILayoutInfo, ILineChartData, IPercentageData } from 'src/app/shared/models/comment-data';
 
@@ -10,6 +10,7 @@ import { IBindedData, ICommentDataInfo, ILayoutInfo, ILineChartData, IPercentage
 })
 export class PercentageLineComponent implements OnInit {
   @ViewChild('rootSvg') svgRoot !: ElementRef;
+  @Input() data !: string;
   layout: ILayoutInfo;
   original_data !: ICommentDataInfo[];
   preprocessed_data!: ICommentDataInfo[];
@@ -23,7 +24,6 @@ export class PercentageLineComponent implements OnInit {
   xDomain: string[] = [];
   bound_frd: number;     // 긍정 댓글 경계
   bound_hst: number;     // 부정 댓글 경계
-  color: string[];
 
   frizia_json = './assets/data/frizia.json';
   frizia_1 = './assets/data/frizia_1.json';
@@ -45,11 +45,10 @@ export class PercentageLineComponent implements OnInit {
     this.x_axis_tick_num = 50;
     this.bound_frd = 0.6;
     this.bound_hst = 0.4;
-    // this.color = ["#89BAF5", "#F3EBD3", "#F04148"]
-    this.color=["#89BAF5", "#F04148"]
   }
   ngAfterViewInit(): void {
-    d3.json(this.frizia_3_6).then((d: any) => {
+    console.log("string data: ",this.data);
+    d3.json(this.data).then((d: any) => {
       d.index = +d.index;
       d.datatype = +d.datatype;
       d.toWho = +d.toWho;
@@ -60,16 +59,10 @@ export class PercentageLineComponent implements OnInit {
       d.score = + d.score;
       return d;
     }).then((data: ICommentDataInfo[]) => {
-      console.log("data: ", data);
       this.preprocess(data);
-      console.log("preprocessed_data: ", this.preprocessed_data);
       this.bind_data(this.preprocessed_data);
-      console.log("binded_data: ", this.binded_data);
       this.get_data_percentage(this.binded_data);
-      console.log("percentage_data: ",this.percentage_data);
       this.get_data_linechart(this.percentage_data);
-      console.log("linchart_data: ", this.linchart_data);
-
       this.render(this.linchart_data);
     })
   }
@@ -85,42 +78,49 @@ export class PercentageLineComponent implements OnInit {
       publishedDate : d.publishedDate,
       timeNum : d.timeNum,
       text : d.text,
-      score : + d.score
+      score : +d.score
     }))
-
-
-    this.preprocessed_data.forEach(d => {
-
-      if(d.datatype == 1){
-        if(data.find(d => d.index == d.toWho)?.score == 0){
-          d.score = +!d.score;
+    // console.log("maped: ",this.preprocessed_data);
+    // 정렬
+    this.preprocessed_data = this.preprocessed_data.sort((a,b) => {return +a.timeNum - +b.timeNum})
+    // 0,1,2 포함여부 결정
+    this.preprocessed_data = this.preprocessed_data
+      .filter(d => d.datatype == 0 || d.datatype == 1 || d.datatype == 2)
+    // 1번 댓글에 대해 원 댓글이 부정이면 toggle
+    this.preprocessed_data
+      .forEach((d,i,arr) => {
+        if(d.datatype == 1){
+          // console.log(d);
+          if(this.preprocessed_data.find(d2 => d2.index == d.toWho)?.score == 0){
+            d.score = +!d.score;
+            console.log(d.index,d.datatype,"--> score:",d.score,"text:"+d.text);
+          }
         }
-      }
-    })
-    // this.preprocessed_data = data.map(d =>{({
-    //   index : d.index,
-    //   datatype : d.datatype,
-    //   toWho : d.toWho,
-    //   author : d.author,
-    //   publishedDate : d.publishedDate
-    // })});
+      })
+
+    // 2번 댓글에 대해 대상 댓글이 부정이면 toggle
+    this.preprocessed_data
+      .forEach(d =>{
+        if(d.datatype == 2){
+          if(data.find(d2 => d2.index == d.toWho)?.score == 0){
+            d.score = +!d.score;
+            console.log(d.index,d.datatype,"--> score:",d.score,"text:"+d.text);
+          }
+        }
+      })
   }
 
   bind_data(data: ICommentDataInfo[]) {
     this.timeStampMin = d3.min(data, (d: ICommentDataInfo) => Date.parse(d.publishedDate))!;
-    // console.log("timeStampMin: ", this.timeStampMin);
 
     this.timeStampMax = d3.max(data, (d: ICommentDataInfo) => Date.parse(d.publishedDate))!;
-    // console.log("timeStampMax: ", this.timeStampMax);
 
     this.x_axis_tick_size = Math.round((this.timeStampMax - this.timeStampMin) / this.x_axis_tick_num);
-    // console.log("x_axis_tick_size: ", this.x_axis_tick_size);
 
 
     for (let i = 0; i < this.x_axis_tick_num; i++) {
       this.xDomain[i] = (this.timeStampMin + this.x_axis_tick_size * i).toString();
     }
-    // console.log("xDomain:", this.xDomain);
 
 
     for (let times of this.xDomain) {
@@ -141,14 +141,12 @@ export class PercentageLineComponent implements OnInit {
         let middle = Date.parse(comments.publishedDate);
         if (i == this.x_axis_tick_num - 1) {
           idx = i;
-          // console.log("True:"+i,left, middle, "NAN");
           break;
         }
         let right = Number(this.xDomain[i + 1]);
 
         if (left <= middle && middle <= right) {
           idx = i;
-          // console.log("True:"+i,left, middle, right);
           break;
         }
       }
@@ -183,7 +181,7 @@ export class PercentageLineComponent implements OnInit {
   get_data_linechart(data:IPercentageData[]){
     this.linchart_data = data.map(d => ({
       time : d.time,
-      value : d.friendly_prctg
+      value : d.hostile_prctg
     }))
   }
 
@@ -197,17 +195,11 @@ export class PercentageLineComponent implements OnInit {
 
     const keys = Object.getOwnPropertyNames(data[0]);
     keys.splice(0, 1);
-    console.log("keys:" + keys);
 
     const x = d3.scaleBand().range([0, width]);
     const y = d3.scaleLinear<number>().range([height, 0]);
 
-    console.log("extent:",d3.extent(data, d => d.time));
-
     x.domain(data.map((d: ILineChartData) => d.time));
-    // x.domain(d3.extent(data, function(d) { return d.time; }))
-    // x.domain(d3.extent(data, d => d.time))
-    console.log("domain:",x('1643373368060'));
 
     y.domain([0, 1]);
 
@@ -238,28 +230,15 @@ export class PercentageLineComponent implements OnInit {
 
     const line = d3.line<ILineChartData>()
       .defined(d => !isNaN(d.value))
-      .x((d:any) => {
-        // console.log(d.time);
-        return d.time})
-      .y((d:any) => d.value)
-      // .curve(d3.curveMonotoneX);
-
-    // graph.append('path')
-    //   .attr("d", line(data))
-    //   .attr("fill", 'none')
-    //   .attr("stroke-width",2)
-    //   .attr("stroke","black")
+      .x((d:any) => x(d.time)!)
+      .y((d:any) => y(d.value))
+      .curve(d3.curveMonotoneX);
 
     graph.append("path")
         .datum(data)
           .attr("fill", 'none')
           .attr("stroke-width",2)
           .attr("stroke","black")
-        // .attr("fill", "none")
-        // .attr("stroke", "steelblue")
-        // .attr("stroke-width", 1)
-        // .attr("stroke-linejoin", "round")
-        // .attr("stroke-linecap", "round")
         .attr("d", line);
   }
 }

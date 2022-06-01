@@ -1,5 +1,11 @@
 <!-- <app-comment-stacked-bar></app-comment-stacked-bar> -->
 <!-- <app-percentage-stacked-bar></app-percentage-stacked-bar> -->
-<app-percentage-line></app-percentage-line>
+<!-- <app-percentage-line></app-percentage-line> -->
+
+<div *ngFor="let data of commentData; let idx = index">
+  <div>{{data}}</div>
+  <app-percentage-line [data]="data"></app-percentage-line>
+</div>
+
 
 
