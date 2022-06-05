@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import * as d3 from 'd3';
 import { IBindedData, ICommentDataInfo, ILayoutInfo } from 'src/app/shared/models/comment-data';
 
@@ -9,6 +9,7 @@ import { IBindedData, ICommentDataInfo, ILayoutInfo } from 'src/app/shared/model
 })
 export class CommentStackedBarComponent implements OnInit {
 	@ViewChild('rootSvg') svgRoot !: ElementRef;
+  @Input() data !: string;
   layout : ILayoutInfo;
   preprocessed_data!:ICommentDataInfo[];
 	binded_data : IBindedData[] = [];
@@ -20,22 +21,13 @@ export class CommentStackedBarComponent implements OnInit {
   bound_frd : number;     // 긍정 댓글 경계
   bound_hst : number;     // 부정 댓글 경계
   color : string[];
-  frizia_json = './assets/data/frizia.json';
-  frizia_1 = './assets/data/frizia_1.json';
-  frizia_2 = './assets/data/frizia_2.json';
-  frizia_3 = './assets/data/frizia_3.json';
-  frizia_4 = './assets/data/frizia_4.json';
-  frizia_5 = './assets/data/frizia_5.json';
-  frizia_6 = './assets/data/frizia_6.json';
-  frizia_7 = './assets/data/frizia_7.json';
-  hanyeseul_20687_json = './assets/data/hanyeseul_20687.json';
-  dentist_0522_json ='./assets/data/dentist_0522.json'
+  
 
 
   constructor() {
 		this.layout = {
 			marginTop: 20, marginRight: 20, marginBottom: 50, marginLeft: 40,
-			height: 500, width: 960
+			height: 300, width: 960
 		}
 		this.x_axis_tick_num = 30;
     this.bound_frd = 0.6;
@@ -44,7 +36,7 @@ export class CommentStackedBarComponent implements OnInit {
 	}
 
   ngAfterViewInit(): void {
-		d3.json(this.frizia_1).then((d: any) => {
+		d3.json(this.data).then((d: any) => {
       d.index = +d.index;
 			d.datatype = +d.datatype;
 			d.toWho = d.toWho;
@@ -55,11 +47,13 @@ export class CommentStackedBarComponent implements OnInit {
       d.score = + d.score;
 			return d;
 		}).then((data: ICommentDataInfo[]) => {
-			console.log("data: ",data);
+      // if(data.length < 1000) {
+      //   console.log("cut : "+this.data);
+        
+      //   return;
+      // }
       this.preprocess(data);
-			console.log("preprocessed_data: ",this.preprocessed_data);
 			this.bind_data(this.preprocessed_data);
-			console.log("binded_data: ",this.binded_data);
 			this.render(this.binded_data);
 		})
 	}
@@ -68,26 +62,56 @@ export class CommentStackedBarComponent implements OnInit {
   }
 
   preprocess(data: ICommentDataInfo[]){
-    this.preprocessed_data = data;
+    this.preprocessed_data = data.map(d =>({
+      index : +d.index,
+      datatype : +d.datatype,
+      toWho : +d.toWho,
+      author : d.author,
+      publishedDate : d.publishedDate,
+      timeNum : d.timeNum,
+      text : d.text,
+      score : +d.score
+    }))
+    // console.log("maped: ",this.preprocessed_data);
+    // 정렬
+    this.preprocessed_data = this.preprocessed_data.sort((a,b) => {return +a.timeNum - +b.timeNum})
+    // 0,1,2 포함여부 결정
+    this.preprocessed_data = this.preprocessed_data
+      .filter(d => d.datatype == 0 || d.datatype == 1 || d.datatype == 2)
+    // 1번 댓글에 대해 원 댓글이 부정이면 toggle
+    this.preprocessed_data
+      .forEach((d,i,arr) => {
+        if(d.datatype == 1){
+          // console.log(d);
+          if(this.preprocessed_data.find(d2 => d2.index == d.toWho)?.score == 0){
+            d.score = +!d.score;
+            // console.log(d.index,d.datatype,"--> score:",d.score,"text:"+d.text);
+          }
+        }
+      })
+
+    // 2번 댓글에 대해 대상 댓글이 부정이면 toggle
+    this.preprocessed_data
+      .forEach(d =>{
+        if(d.datatype == 2){
+          if(data.find(d2 => d2.index == d.toWho)?.score == 0){
+            d.score = +!d.score;
+            // console.log(d.index,d.datatype,"--> score:",d.score,"text:"+d.text);
+          }
+        }
+      })
   }
 
   bind_data(data: ICommentDataInfo[]){
-    console.log("parse:",Date.parse(data[1].publishedDate));
-
 		this.timeStampMin = d3.min(data, (d: ICommentDataInfo) => Date.parse(d.publishedDate))!;
-    console.log("timeStampMin: ",this.timeStampMin);
-
 		this.timeStampMax = d3.max(data, (d: ICommentDataInfo) => Date.parse(d.publishedDate))!;
-    console.log("timeStampMax: ",this.timeStampMax);
 
 		this.x_axis_tick_size = Math.round((this.timeStampMax - this.timeStampMin) / this.x_axis_tick_num);
-    console.log("x_axis_tick_size: ",this.x_axis_tick_size);
 
 
 		for (let i = 0; i < this.x_axis_tick_num; i++) {
 			this.xDomain[i] = (this.timeStampMin + this.x_axis_tick_size*i).toString();
 		}
-    console.log("xDomain:",this.xDomain);
 
 
     for(let times of this.xDomain){
@@ -108,14 +132,12 @@ export class CommentStackedBarComponent implements OnInit {
         let middle = Date.parse(comments.publishedDate);
         if(i==this.x_axis_tick_num-1){
           idx=i;
-          // console.log("True:"+i,left, middle, "NAN");
           break;
         }
         let right=Number(this.xDomain[i+1]);
 
         if(left<=middle && middle<=right){
           idx=i;
-          // console.log("True:"+i,left, middle, right);
           break;
         }
       }

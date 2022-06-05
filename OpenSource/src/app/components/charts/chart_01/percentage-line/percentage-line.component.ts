@@ -25,29 +25,18 @@ export class PercentageLineComponent implements OnInit {
   bound_frd: number;     // 긍정 댓글 경계
   bound_hst: number;     // 부정 댓글 경계
 
-  frizia_json = './assets/data/frizia.json';
-  frizia_1 = './assets/data/frizia_1.json';
-  frizia_2 = './assets/data/frizia_2.json';
-  frizia_3 = './assets/data/frizia_3.json';
-  frizia_4 = './assets/data/frizia_4.json';
-  frizia_5 = './assets/data/frizia_5.json';
-  frizia_6 = './assets/data/frizia_6.json';
-  frizia_7 = './assets/data/frizia_7.json';
-  frizia_3_6 = './assets/data/frizia_3_6.json';
-  hanyeseul_20687_json = './assets/data/hanyeseul_20687.json';
-  dentist_0522_json = './assets/data/dentist_0522.json'
 
   constructor() {
     this.layout = {
       marginTop: 20, marginRight: 20, marginBottom: 70, marginLeft: 40,
-      height: 500, width: 960
+      height: 300, width: 960
     }
-    this.x_axis_tick_num = 50;
+    this.x_axis_tick_num = 30;
     this.bound_frd = 0.6;
     this.bound_hst = 0.4;
   }
   ngAfterViewInit(): void {
-    console.log("string data: ",this.data);
+    // console.log("string data: ",this.data);
     d3.json(this.data).then((d: any) => {
       d.index = +d.index;
       d.datatype = +d.datatype;
@@ -59,9 +48,18 @@ export class PercentageLineComponent implements OnInit {
       d.score = + d.score;
       return d;
     }).then((data: ICommentDataInfo[]) => {
+      // if(data.length < 1000) {
+      //   console.log("cut : "+this.data);
+        
+      //   return;
+      // }
       this.preprocess(data);
+      // console.log(data);
+      console.log(data.length);
       this.bind_data(this.preprocessed_data);
       this.get_data_percentage(this.binded_data);
+      // console.log(this.binded_data);
+      
       this.get_data_linechart(this.percentage_data);
       this.render(this.linchart_data);
     })
@@ -93,7 +91,7 @@ export class PercentageLineComponent implements OnInit {
           // console.log(d);
           if(this.preprocessed_data.find(d2 => d2.index == d.toWho)?.score == 0){
             d.score = +!d.score;
-            console.log(d.index,d.datatype,"--> score:",d.score,"text:"+d.text);
+            // console.log(d.index,d.datatype,"--> score:",d.score,"text:"+d.text);
           }
         }
       })
@@ -104,7 +102,7 @@ export class PercentageLineComponent implements OnInit {
         if(d.datatype == 2){
           if(data.find(d2 => d2.index == d.toWho)?.score == 0){
             d.score = +!d.score;
-            console.log(d.index,d.datatype,"--> score:",d.score,"text:"+d.text);
+            // console.log(d.index,d.datatype,"--> score:",d.score,"text:"+d.text);
           }
         }
       })
